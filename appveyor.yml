@@ -113,3 +113,6 @@ build:
 test_script:
   - cp Debug\expatd.dll tests\Debug
   - tests\Debug\runtests.exe
+
+matrix:
+  fast_finish: true

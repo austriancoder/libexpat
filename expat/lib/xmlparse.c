@@ -906,6 +906,30 @@ XML_ParserCreate_MM(const XML_Char *encodingName,
   return parserCreate(encodingName, memsuite, nameSep, NULL);
 }
 
+
+#if defined(_MSC_VER)
+/*
+   malloc/realloc/free have calling convention __cdecl.
+   For compilation of Expat, the default calling convention could be
+   something else, e.g. __stdcall (command line switch /Gz), so by using
+   these wrapper functions we can mask differences in calling convetions.
+*/
+static void *_EXPAT_malloc(size_t size) {
+  return malloc(size);
+}
+static void *_EXPAT_realloc(void *memblock, size_t size) {
+  return realloc(memblock, size);
+}
+static void _EXPAT_free(void *memblock) {
+  free(memblock);
+}
+#else
+# define _EXPAT_malloc malloc
+# define _EXPAT_realloc realloc
+# define _EXPAT_free free
+#endif
+
+
 static XML_Parser
 parserCreate(const XML_Char *encodingName,
              const XML_Memory_Handling_Suite *memsuite,
@@ -930,9 +954,9 @@ parserCreate(const XML_Char *encodingName,
     parser = (XML_Parser)malloc(sizeof(struct XML_ParserStruct));
     if (parser != NULL) {
       mtemp = (XML_Memory_Handling_Suite *)&(parser->m_mem);
-      mtemp->malloc_fcn = malloc;
-      mtemp->realloc_fcn = realloc;
-      mtemp->free_fcn = free;
+      mtemp->malloc_fcn = _EXPAT_malloc;
+      mtemp->realloc_fcn = _EXPAT_realloc;
+      mtemp->free_fcn = _EXPAT_free;
     }
   }
 
